@@ -139,8 +139,10 @@ namespace StarterAssets
         {
             GameObject.FindGameObjectWithTag("PlayerFollowCamera").GetComponent<CinemachineVirtualCamera>().Follow =
                 transform.GetChild(0).transform;
-            
-            // GetComponent<()
+
+            var rangeDetectionCollider = GetComponentInChildren<SphereCollider>();
+            if (rangeDetectionCollider != null)
+                rangeDetectionCollider.gameObject.AddComponent<LiveKitAudio>();
         }
 
         public override void OnStartAuthority()
@@ -149,6 +151,8 @@ namespace StarterAssets
 
             PlayerInput playerInput = GetComponent<PlayerInput>();
             playerInput.enabled = true;
+            
+            
         }
         private void Start()
         {

@@ -3,13 +3,8 @@ using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 
-public class LiveKitAudio : NetworkBehaviour
+public class LiveKitAudio : MonoBehaviour
 {
-    [SerializeField] private SphereCollider sphereCollider;
-
-    public override void OnStartLocalPlayer()
-    {
-        sphereCollider.enabled = true;
-    }
+    public SphereCollider sphereCollider;
 }
 
