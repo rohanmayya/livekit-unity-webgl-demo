@@ -1,4 +1,6 @@
+using Cinemachine;
 using Mirror;
+using Mirror.Examples.Pong;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM && STARTER_ASSETS_PACKAGES_CHECKED
 using UnityEngine.InputSystem;
@@ -133,6 +135,19 @@ namespace StarterAssets
             }
         }
 
+        public override void OnStartLocalPlayer()
+        {
+            GameObject.FindGameObjectWithTag("PlayerFollowCamera").GetComponent<CinemachineVirtualCamera>().Follow =
+                transform.GetChild(0).transform;
+        }
+
+        public override void OnStartAuthority()
+        {
+            base.OnStartAuthority();
+
+            PlayerInput playerInput = GetComponent<PlayerInput>();
+            playerInput.enabled = true;
+        }
         private void Start()
         {
             _cinemachineTargetYaw = CinemachineCameraTarget.transform.rotation.eulerAngles.y;
@@ -155,6 +170,8 @@ namespace StarterAssets
 
         private void Update()
         {
+            if (!isLocalPlayer) return;
+            
             _hasAnimator = TryGetComponent(out _animator);
 
             JumpAndGravity();
