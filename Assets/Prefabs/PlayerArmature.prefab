@@ -1008,6 +1008,7 @@ GameObject:
   - component: {fileID: 2824420691617807777}
   - component: {fileID: 5754470306703424015}
   - component: {fileID: -8003967017228345212}
+  - component: {fileID: 8087405771680417905}
   m_Layer: 8
   m_Name: PlayerArmature
   m_TagString: Player
@@ -1307,6 +1308,20 @@ MonoBehaviour:
   BottomClamp: -30
   CameraAngleOverride: 0
   LockCameraPosition: 0
+--- !u!114 &8087405771680417905
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4410471476117065412}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc84db7f3206b4ce8864d79e3c7ccfa0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncMode: 0
+  syncInterval: 0.1
 --- !u!1 &4520591360269220504
 GameObject:
   m_ObjectHideFlags: 0
