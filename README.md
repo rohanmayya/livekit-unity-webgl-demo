@@ -8,4 +8,11 @@ Note the classes:
 - LiveKitAudio, this is where connecting to a room & all the other callbacks are/will be registered.
 - The setup script enables the audio script on only the local clients, but the sphere colliders are enabled for all other clients.
 
+There are 2 touchpoints for spatial audio:
+1. When a player's sphere collider overlaps with another (and their audio tracks are already published) player's sphere collider, we add them to the local player's rangeList and also subscribe to their tracks,
+2. When a player publishes their audio tracks, all other players subscribe to their tracks *if* that player happens to be near them.
+
+If you take care of these 2 cases, you will have a neat, working spatial audio implementation, barring edge cases that you'll have to account for.
+
+
 
