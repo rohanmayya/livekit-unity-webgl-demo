@@ -16,16 +16,10 @@ public class LiveKitAudio : MonoBehaviour
 {
     Room room;
     Setup setup;
-    public SphereCollider rangeSphereCollider;
 
     Dictionary<string, Setup> playerSetupsInRangeMap =
         new Dictionary<string, Setup>();
-
-    void Awake()
-    {
-        rangeSphereCollider = GetComponent<SphereCollider>();
-    }
-
+    
     void Start()
     {
         setup = GetComponentInParent<Setup>();
