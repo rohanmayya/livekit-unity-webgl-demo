@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 
-public class LiveKitSetup : NetworkBehaviour
+public class Setup : NetworkBehaviour
 {
+    [SyncVar(hook = nameof(OnLiveKitSidChanged))]
     public string liveKitSid;
     
     public override void OnStartLocalPlayer()
@@ -18,7 +19,10 @@ public class LiveKitSetup : NetworkBehaviour
     public void SetLiveKitSid(string sid)
     {
         liveKitSid = sid;
+    }
 
+    private void OnLiveKitSidChanged(string oldLiveKitSid, string newLiveKitSid)
+    {
         if (isLocalPlayer)
         {
             GetComponentInChildren<SphereCollider>().enabled = true;
