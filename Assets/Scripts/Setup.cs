@@ -5,18 +5,21 @@ using UnityEngine;
 
 public class Setup : NetworkBehaviour
 {
+    [Header("Required")]
+    public SphereCollider sphereCollider;
+
+    [Header("Sync Vars")]
     [SyncVar(hook = nameof(OnLiveKitSidChanged))]
     public string liveKitSid;
+
     
     public override void OnStartLocalPlayer()
     {
-        var rangeDetectionCollider = GetComponentInChildren<SphereCollider>();
-        if (rangeDetectionCollider != null)
-            rangeDetectionCollider.gameObject.AddComponent<LiveKitAudio>();
+        sphereCollider.gameObject.AddComponent<LiveKitAudio>();
     }
 
     [Command]
-    public void SetLiveKitSid(string sid)
+    public void CmdSetLiveKitSid(string sid)
     {
         liveKitSid = sid;
     }
@@ -25,8 +28,18 @@ public class Setup : NetworkBehaviour
     {
         if (isLocalPlayer)
         {
-            GetComponentInChildren<SphereCollider>().enabled = true;
             // Fire Co-routine to update volume fade per frame here.
+            StartCoroutine(EnableSphereCollider());
         }
+    }
+    
+    IEnumerator EnableSphereCollider()
+    {
+        yield return new WaitForSeconds(3);
+
+        if (!isLocalPlayer) yield break;
+        
+        sphereCollider.enabled = true;
+        yield return GetComponentInChildren<LiveKitAudio>().SetVolumeOfPlayersInRange();
     }
 }

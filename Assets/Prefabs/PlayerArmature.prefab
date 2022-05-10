@@ -1322,6 +1322,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   syncMode: 0
   syncInterval: 0.1
+  sphereCollider: {fileID: 699177364133953845}
   liveKitSid: 
 --- !u!1 &4520591360269220504
 GameObject:
