@@ -26,20 +26,18 @@ public class Setup : NetworkBehaviour
 
     private void OnLiveKitSidChanged(string oldLiveKitSid, string newLiveKitSid)
     {
-        if (isLocalPlayer)
-        {
-            // Fire Co-routine to update volume fade per frame here.
-            StartCoroutine(EnableSphereCollider());
-        }
+        // Fire Co-routine to update volume fade per frame here.
+        StartCoroutine(EnableSphereCollider());
     }
     
     IEnumerator EnableSphereCollider()
     {
         yield return new WaitForSeconds(3);
-
-        if (!isLocalPlayer) yield break;
         
         sphereCollider.enabled = true;
+        
+        if (!isLocalPlayer) yield break;
+        
         yield return GetComponentInChildren<LiveKitAudio>().SetVolumeOfPlayersInRange();
     }
 }
