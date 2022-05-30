@@ -72,15 +72,15 @@ public class LiveKitAudio : MonoBehaviour
         {
             room.Participants[remoteParticipantLiveKitSid].SetVolume(volume);
             
-            // foreach (var track in room.Participants[remoteParticipantLiveKitSid].AudioTracks)
-        	// {
-        	// 	if (track.Value?.Track?.AttachedElements == null) continue;
-        	//
-        	// 	foreach (var audioElement in track.Value.Track.AttachedElements)
-        	// 	{
-        	// 		((HTMLAudioElement)audioElement).Volume = volume;
-        	// 	}
-        	// }
+            foreach (var track in room.Participants[remoteParticipantLiveKitSid].AudioTracks)
+        	{
+        		if (track.Value?.Track?.AttachedElements == null) continue;
+        	
+        		foreach (var audioElement in track.Value.Track.AttachedElements)
+        		{
+        			((HTMLAudioElement)audioElement).Volume = volume;
+        		}
+        	}
         }
     }
 
