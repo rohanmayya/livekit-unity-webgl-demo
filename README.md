@@ -14,5 +14,12 @@ There are 2 touchpoints for spatial audio:
 
 If you take care of these 2 cases, you will have a neat, working spatial audio implementation, barring edge cases that you'll have to account for.
 
+A few steps in Unity to make sure everything works correctly:
 
 
+- Ensure in Player Settings -> Physics, LiveKitAudio layer only interacts with LiveKitAudio layer.
+
+<img width="308" alt="Screenshot 2022-06-07 at 7 04 21 PM" src="https://user-images.githubusercontent.com/32911377/172393491-977e6b7d-c6b3-415a-aaca-798611516c67.png">
+
+- The sphere collider on the LiveKitAudio Game Object on the player prefab must be disabled.
+- Assign the sphere collider of this GameObject into the Setup script on the root of the player prefab.
