@@ -8,7 +8,8 @@ public class Setup : NetworkBehaviour
     [Header("Required")]
     public SphereCollider sphereCollider;
 
-    public TextMesh textMesh;
+    [SerializeField] private TextMesh textMesh;
+    [SerializeField] private GameObject talkingIndicator;
     
     [Header("Sync Vars")]
     [SyncVar(hook = nameof(OnLiveKitSidChanged))]
@@ -53,5 +54,15 @@ public class Setup : NetworkBehaviour
         if (!isLocalPlayer) yield break;
         
         yield return GetComponentInChildren<LiveKitAudio>().SetVolumeOfPlayersInRange();
+    }
+
+    public void ActivateTalkingIndicator()
+    {
+        talkingIndicator.GetComponent<MeshRenderer>().material.color = Color.green;
+    }
+
+    public void DeactivateTalkingIndicator()
+    {
+        talkingIndicator.GetComponent<MeshRenderer>().material.color = Color.white;
     }
 }

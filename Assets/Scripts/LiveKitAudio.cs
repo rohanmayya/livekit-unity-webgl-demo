@@ -189,7 +189,7 @@ public class LiveKitAudio : MonoBehaviour
 
         setup.CmdSetLiveKitSid(room.LocalParticipant.Sid);
 
-        // room.LocalParticipant.IsSpeakingChanged += (isSpeaking) => HandleLocalParticipantSpeakingChanged(isSpeaking);
+        room.LocalParticipant.IsSpeakingChanged += (isSpeaking) => HandleLocalParticipantSpeakingChanged(isSpeaking);
     }
 
     void RegisterLiveKitCallbacks()
@@ -199,26 +199,26 @@ public class LiveKitAudio : MonoBehaviour
         room.TrackPublished += (publication, participant) => HandleRemoteTrackPublished(publication.Track, publication, participant);
         room.TrackSubscribed += (track, publication, participant) => HandleTrackSubscribed(track, publication);
         room.TrackUnsubscribed += (track, publication, participant) => HandleTrackUnsubscribed(track, publication);
-        // room.ActiveSpeakersChanged += (speakers) => HandleActiveSpeakersChanged(speakers);
+        room.ActiveSpeakersChanged += (speakers) => HandleActiveSpeakersChanged(speakers);
     }
 
-    // void HandleActiveSpeakersChanged(JSArray<Participant> speakers)
-    // {
-    //     foreach (var setup in playerSetupsInRangeMap)
-    //         if (room.Participants.TryGetValue(setup.Value.liveKitSid, out RemoteParticipant participant))
-    //             if (speakers.Contains(participant))
-    //                 setup.Value.ActivateTalkingIndicatorLocally();
-    //             else
-    //                 setup.Value.DeactivateTalkingIndicatorLocally();
-    // }
+    void HandleActiveSpeakersChanged(JSArray<Participant> speakers)
+    {
+        foreach (var setup in playerSetupsInRangeMap)
+            if (room.Participants.TryGetValue(setup.Value.liveKitSid, out RemoteParticipant participant))
+                if (speakers.Contains(participant))
+                    setup.Value.ActivateTalkingIndicator();
+                else
+                    setup.Value.DeactivateTalkingIndicator();
+    }
 
-    // void HandleLocalParticipantSpeakingChanged(bool isSpeaking)
-    // {
-    //     if (isSpeaking)
-    //         setup.ActivateTalkingIndicatorLocally();
-    //     else
-    //         setup.DeactivateTalkingIndicatorLocally();
-    // }
+    void HandleLocalParticipantSpeakingChanged(bool isSpeaking)
+    {
+        if (isSpeaking)
+            setup.ActivateTalkingIndicator();
+        else
+            setup.DeactivateTalkingIndicator();
+    }
 
 
     void HandleParticipantConnected(Participant remoteParticipant)
@@ -269,7 +269,7 @@ public class LiveKitAudio : MonoBehaviour
         if (otherPlayerSetup)
         {
             playerSetupsInRangeMap.Add(remoteParticipantId, otherPlayerSetup);
-            // playerSetup.ShowTalkingIndicator();
+            // otherPlayerSetup.ShowTalkingIndicator();
         }
     }
 
