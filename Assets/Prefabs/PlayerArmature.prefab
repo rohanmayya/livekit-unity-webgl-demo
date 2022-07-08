@@ -1327,6 +1327,7 @@ MonoBehaviour:
   syncInterval: 0.1
   sphereCollider: {fileID: 699177364133953845}
   textMesh: {fileID: 8574258376868604766}
+  talkingIndicator: {fileID: 8990952192117755787}
   liveKitSid: 
   playerName: 
 --- !u!54 &-2249932774760921949
@@ -2575,7 +2576,7 @@ GameObject:
   - component: {fileID: 2459790463898791873}
   - component: {fileID: 8207808516085409952}
   m_Layer: 0
-  m_Name: Sphere
+  m_Name: TalkingIndicator
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
