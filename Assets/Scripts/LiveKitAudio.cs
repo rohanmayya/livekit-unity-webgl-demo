@@ -14,10 +14,12 @@ public struct LiveKitAuth
 
 public class LiveKitAudio : MonoBehaviour
 {
-    Room room;
-    Setup setup;
+    public static Room room;
+    public static Action ToggleScreenShareAction;
 
-    Dictionary<string, Setup> playerSetupsInRangeMap =
+    private Setup setup;
+
+    private readonly Dictionary<string, Setup> _playerSetupsInRangeMap =
         new Dictionary<string, Setup>();
     
     void Start()
@@ -39,7 +41,7 @@ public class LiveKitAudio : MonoBehaviour
 
             try
             {
-                foreach (var playerSetup in playerSetupsInRangeMap)
+                foreach (var playerSetup in _playerSetupsInRangeMap)
                 {
                     if (playerSetup.Value == null)
                         continue;
@@ -87,11 +89,9 @@ public class LiveKitAudio : MonoBehaviour
 
     public void OnTriggerEnter(Collider other)
     {
-        var remotePlayerSetup = other.GetComponentInParent<Setup>();
+        Debug.Log($"Trigger Entered with {other.GetComponentInParent<Setup>().playerName}");
 
-#if UNITY_EDITOR
-        SetVolume(remotePlayerSetup, 1);
-#endif
+        var remotePlayerSetup = other.GetComponentInParent<Setup>();
 
         if (!remotePlayerSetup || remotePlayerSetup.liveKitSid == null)
             return;
@@ -180,8 +180,9 @@ public class LiveKitAudio : MonoBehaviour
         RoomConnectOptions roomConnectOptions = new RoomConnectOptions { AutoSubscribe = false };
 
         room = new Room();
-        RegisterLiveKitCallbacks();
-
+        RegisterAudioCallbacks();
+        RegisterScreenShareCallbacks();
+        
         var c = room.Connect(Constants.LiveKitRoomUrl, token, roomConnectOptions);
         yield return c;
 
@@ -194,25 +195,82 @@ public class LiveKitAudio : MonoBehaviour
         room.LocalParticipant.IsSpeakingChanged += (isSpeaking) => HandleLocalParticipantSpeakingChanged(isSpeaking);
     }
 
-    void RegisterLiveKitCallbacks()
+    void RegisterAudioCallbacks()
     {
-        room.ParticipantConnected += (participant) => HandleParticipantConnected(participant);
-        room.ParticipantDisconnected += (participant) => HandleParticipantDisconnected(participant);
-        room.TrackPublished += (publication, participant) => HandleRemoteTrackPublished(publication.Track, publication, participant);
-        room.TrackSubscribed += (track, publication, participant) => HandleTrackSubscribed(track, publication);
-        room.TrackUnsubscribed += (track, publication, participant) => HandleTrackUnsubscribed(track, publication);
-        room.ActiveSpeakersChanged += (speakers) => HandleActiveSpeakersChanged(speakers);
+        room.ParticipantConnected += HandleParticipantConnected;
+        room.ParticipantDisconnected += HandleParticipantDisconnected;
+        room.TrackPublished += HandleRemoteAudioTrackPublished;
+        room.TrackSubscribed += HandleAudioTrackSubscribed;
+        room.TrackUnsubscribed += HandleAudioTrackUnsubscribed;
+        room.ActiveSpeakersChanged += HandleActiveSpeakersChanged;
     }
 
+    void RegisterScreenShareCallbacks()
+    {
+        room.LocalTrackPublished += HandleLocalScreenShareTrackPublished;
+        room.TrackPublished += HandleRemoteScreenShareTrackPublished;
+        room.TrackSubscribed += HandleScreenShareTrackSubscribed;
+    }
+
+    
+    void HandleParticipantConnected(Participant remoteParticipant)
+    {
+        if (_playerSetupsInRangeMap.ContainsKey(remoteParticipant.Sid))
+            if (remoteParticipant.AudioTracks != null)
+                foreach (var audioTrack in remoteParticipant.AudioTracks)
+                    if (!((RemoteTrackPublication)audioTrack.Value).IsSubscribed)
+                        ((RemoteTrackPublication)audioTrack.Value).SetSubscribed(true);
+    }
+
+    void HandleParticipantDisconnected(Participant remoteParticipant)
+    {
+        if (_playerSetupsInRangeMap.ContainsKey(remoteParticipant.Sid))
+            _playerSetupsInRangeMap.Remove(remoteParticipant.Sid);
+    }
+    
+    void HandleRemoteAudioTrackPublished(TrackPublication publication, Participant participant)
+    {
+        if (publication.Source == TrackSource.Microphone)
+        {
+            if (_playerSetupsInRangeMap.ContainsKey(participant.Sid))
+            {
+                Participant otherParticipant = room.Participants[participant.Sid];
+
+                foreach (var audioTrack in otherParticipant.AudioTracks)
+                    if (audioTrack.Value != null)
+                        ((RemoteTrackPublication)audioTrack.Value)?.SetSubscribed(true);
+            }
+        }
+    }
+    
+    void HandleAudioTrackSubscribed(Track track, TrackPublication publication, RemoteParticipant participant)
+    {
+        if (track.Source == TrackSource.Microphone && track.Kind == TrackKind.Audio &&
+            publication is RemoteTrackPublication)
+            track.Attach();
+    }
+    
+    void HandleAudioTrackUnsubscribed(Track track, TrackPublication publication, RemoteParticipant participant) =>
+        track?.Detach();
+    
     void HandleActiveSpeakersChanged(JSArray<Participant> speakers)
     {
-        Debug.Log("Players near me count -- " + playerSetupsInRangeMap.Count);
-        foreach (var setup in playerSetupsInRangeMap)
-            if (room.Participants.TryGetValue(setup.Value.liveKitSid, out RemoteParticipant participant))
-                if (speakers.Contains(participant))
-                    setup.Value.ActivateTalkingIndicator();
-                else
-                    setup.Value.DeactivateTalkingIndicator();
+        foreach (var setup in _playerSetupsInRangeMap)
+        {
+            if (setup.Value != null && setup.Value.liveKitSid != null)
+            {
+                if (room.Participants.TryGetValue(setup.Value.liveKitSid, out RemoteParticipant participant))
+                    if (speakers.Contains(participant))
+                        setup.Value.ActivateTalkingIndicator();
+                    else
+                        setup.Value.DeactivateTalkingIndicator();
+            }
+            else
+            {
+                Debug.Log("In fn [HandleActiveSpeakersChanged] - Either player or player's LiveKitSid is null.");
+            }
+
+        }
     }
 
     void HandleLocalParticipantSpeakingChanged(bool isSpeaking)
@@ -223,55 +281,14 @@ public class LiveKitAudio : MonoBehaviour
             setup.DeactivateTalkingIndicator();
     }
 
-
-    void HandleParticipantConnected(Participant remoteParticipant)
-    {
-        if (playerSetupsInRangeMap.ContainsKey(remoteParticipant.Sid))
-            if (remoteParticipant.AudioTracks != null)
-                foreach (var audioTrack in remoteParticipant.AudioTracks)
-                    if (!((RemoteTrackPublication)audioTrack.Value).IsSubscribed)
-                        ((RemoteTrackPublication)audioTrack.Value).SetSubscribed(true);
-    }
-
-    void HandleParticipantDisconnected(Participant remoteParticipant)
-    {
-        if (playerSetupsInRangeMap.ContainsKey(remoteParticipant.Sid))
-            playerSetupsInRangeMap.Remove(remoteParticipant.Sid);
-    }
-
-    void HandleRemoteTrackPublished(Track track, TrackPublication publication, Participant participant)
-    {
-        // Publishing before colliders enabled is fine. Then collider trigger enter takes care of subscribing to each other
-        // This callback is needed for when colliders enabled. New guy subscribes to the old, already connected guy who has already published his audio tracks. Hence the old guy can listen to the new guy.
-        // But this is required for when new guy is trying to listen to others. Whenever he wants to publish his audio tracks, he's free to do so. (By hitting unmute.)
-        // As soon as he does so, every other client in his vicinity fires this callback. They end up subscribing to him. This prevents the need for new guy to walk in and out to be heard. 
-        // Happens once when mic track is published on clicking unmute button for the first time.
-        if (playerSetupsInRangeMap.ContainsKey(participant.Sid))
-        {
-            Participant otherParticipant = room?.Participants[participant.Sid];
-
-            if (otherParticipant?.AudioTracks != null)
-                foreach (var audioTrack in otherParticipant.AudioTracks)
-                    if (audioTrack.Value != null)
-                        ((RemoteTrackPublication)audioTrack.Value).SetSubscribed(true);
-        }
-    }
-
-    void HandleTrackSubscribed(Track track, TrackPublication publication)
-    {
-        if (track.Kind == TrackKind.Audio && publication is RemoteTrackPublication)
-            track.Attach();
-    }
-
-    void HandleTrackUnsubscribed(Track track, TrackPublication publication) => track?.Detach();
-
+    
     void AddToVolumeChecking(string remoteParticipantId, GameObject playerGameobject)
     {
         var otherPlayerSetup = playerGameobject.GetComponent<Setup>();
 
         if (otherPlayerSetup)
         {
-            playerSetupsInRangeMap.Add(remoteParticipantId, otherPlayerSetup);
+            _playerSetupsInRangeMap.Add(remoteParticipantId, otherPlayerSetup);
             // otherPlayerSetup.ShowTalkingIndicator();
         }
     }
@@ -282,7 +299,7 @@ public class LiveKitAudio : MonoBehaviour
 
         if (otherPlayerSetup)
         {
-            playerSetupsInRangeMap.Remove(remoteParticipantId);
+            _playerSetupsInRangeMap.Remove(remoteParticipantId);
             // playerSetup.HideTalkingIndicator();
         }
     }
