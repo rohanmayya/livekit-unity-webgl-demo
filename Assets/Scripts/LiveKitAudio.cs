@@ -156,12 +156,13 @@ public class LiveKitAudio : MonoBehaviour
 
     IEnumerator SetupLiveKit()
     {
-        string roomKey = "TestingRoom";
-        string playerName = Guid.NewGuid().ToString();
+        const string roomKey = "TestingRoom";
+        var playerName = string.IsNullOrEmpty(setup.playerName)
+            ? Guid.NewGuid().ToString()
+            : setup.playerName;
         
-        string url = Constants.LiveKitTokenEndpoint;
-        
-        string liveKitConnectJson =
+        var url = Constants.LiveKitTokenEndpoint;
+        var liveKitConnectJson =
             $"{{ \"participantIdentity\":\"{setup.netId}\", \"room\":\"{roomKey}\", \"name\":\"{playerName}\" }}";
 
         using (UnityWebRequest www = UnityWebRequest.Post(url, liveKitConnectJson))
