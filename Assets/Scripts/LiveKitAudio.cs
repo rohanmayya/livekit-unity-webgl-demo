@@ -24,7 +24,7 @@ public class LiveKitAudio : MonoBehaviour
     {
         setup = GetComponentInParent<Setup>();
 
-#if UNITY_WEBGL
+#if UNITY_WEBGL && !UNITY_EDITOR
 		StartCoroutine(SetupLiveKit());
 #endif
     }
@@ -151,7 +151,7 @@ public class LiveKitAudio : MonoBehaviour
     IEnumerator SetupLiveKit()
     {
 
-        string url = "https://YOURAPI.com/api/token";
+        string url = Constants.LiveKitTokenEndpoint;
         
         string liveKitConnectJson = $"{{ \"participantIdentity\":\"{setup.netId}\", \"room\":\"TestingRoom\" }}";
 
@@ -182,9 +182,11 @@ public class LiveKitAudio : MonoBehaviour
         room = new Room();
         RegisterLiveKitCallbacks();
 
-        var c = room.Connect("wss://yoururl.livekit.cloud", token, roomConnectOptions);
+        var c = room.Connect(Constants.LiveKitRoomUrl, token, roomConnectOptions);
         yield return c;
 
+        yield return room.LocalParticipant.SetMicrophoneEnabled(true);
+        
         Debug.Log("Finished setup and connected to room");
 
         setup.CmdSetLiveKitSid(room.LocalParticipant.Sid);
@@ -204,6 +206,7 @@ public class LiveKitAudio : MonoBehaviour
 
     void HandleActiveSpeakersChanged(JSArray<Participant> speakers)
     {
+        Debug.Log("Players near me count -- " + playerSetupsInRangeMap.Count);
         foreach (var setup in playerSetupsInRangeMap)
             if (room.Participants.TryGetValue(setup.Value.liveKitSid, out RemoteParticipant participant))
                 if (speakers.Contains(participant))
