@@ -18,9 +18,15 @@ public class LiveKitAudio : MonoBehaviour
     public static Action ToggleScreenShareAction;
 
     private Setup setup;
+    private TVFullScreenUI screenShareUICanvas;
 
     private readonly Dictionary<string, Setup> _playerSetupsInRangeMap =
         new Dictionary<string, Setup>();
+
+    private void Awake()
+    {
+        ToggleScreenShareAction = ToggleScreenShare;
+    }
     
     void Start()
     {
@@ -193,6 +199,8 @@ public class LiveKitAudio : MonoBehaviour
         setup.CmdSetLiveKitSid(room.LocalParticipant.Sid);
 
         room.LocalParticipant.IsSpeakingChanged += (isSpeaking) => HandleLocalParticipantSpeakingChanged(isSpeaking);
+        
+        SubscribeToExistingScreenShareTracks();
     }
 
     void RegisterAudioCallbacks()
@@ -269,7 +277,6 @@ public class LiveKitAudio : MonoBehaviour
             {
                 Debug.Log("In fn [HandleActiveSpeakersChanged] - Either player or player's LiveKitSid is null.");
             }
-
         }
     }
 
@@ -303,4 +310,139 @@ public class LiveKitAudio : MonoBehaviour
             // playerSetup.HideTalkingIndicator();
         }
     }
+    
+      #region Screen Sharing
+
+    void HandleLocalScreenShareTrackPublished(TrackPublication publication, Participant participant)
+    {
+        Track track = publication.Track;
+        CheckForScreenShare(track, publication, true);
+    }
+
+
+    private void HandleRemoteScreenShareTrackPublished(TrackPublication publication,
+        RemoteParticipant participant)
+    {
+        if (publication.Source == TrackSource.ScreenShare || publication.Source == TrackSource.ScreenShareAudio)
+        {
+            if (room?.LocalParticipant?.IsScreenShareEnabled == true)
+            {
+                StartCoroutine(DisableScreenShare());
+            }
+
+            SubscribeToPublishedScreenShareTracks(participant);
+        }
+    }
+
+    void HandleScreenShareTrackSubscribed(Track track, TrackPublication publication, RemoteParticipant participant)
+    {
+        CheckForScreenShare(track, publication, false);
+    }
+
+    private void ToggleScreenShare()
+    {
+        StartCoroutine(room.LocalParticipant.IsScreenShareEnabled ? DisableScreenShare() : EnableScreenShare());
+    }
+
+    private IEnumerator EnableScreenShare()
+    {
+        ScreenShareCaptureOptions options = new ScreenShareCaptureOptions
+        {
+            Audio = true
+        };
+
+        yield return room?.LocalParticipant?.SetScreenShareEnabled(true, options);
+    }
+
+    private IEnumerator DisableScreenShare()
+    {
+        yield return room?.LocalParticipant?.SetScreenShareEnabled(false);
+    }
+
+    void SubscribeToExistingScreenShareTracks()
+    {
+        foreach (var participant in room.Participants)
+        {
+            SubscribeToPublishedScreenShareTracks(participant.Value);
+        }
+    }
+
+    void SubscribeToPublishedScreenShareTracks(RemoteParticipant participant)
+    {
+        Debug.Log("In [SubscribeToPublishedScreenShareTracks]");
+
+        foreach (var audioTrack in participant.AudioTracks)
+        {
+            if (audioTrack.Value?.Source == TrackSource.ScreenShareAudio)
+                ((RemoteTrackPublication) audioTrack.Value)?.SetSubscribed(true);
+        }
+
+        foreach (var videoTrack in participant.VideoTracks)
+        {
+            if (videoTrack.Value?.Source == TrackSource.ScreenShare)
+                ((RemoteTrackPublication) videoTrack.Value)?.SetSubscribed(true);
+        }
+    }
+
+    private void CheckForScreenShare(Track track, TrackPublication publication, bool isLocalParticipant)
+    {
+        if (publication.Source == TrackSource.ScreenShare)
+        {
+            EnableScreenShareVideo(track);
+        }
+
+        if (!isLocalParticipant && publication.Source == TrackSource.ScreenShareAudio)
+        {
+            EnableScreenShareAudio(track, publication);
+        }
+    }
+
+
+    private void EnableScreenShareVideo(Track track)
+    {
+        if (track.Kind != TrackKind.Video) return;
+
+        var video = track.Attach() as HTMLVideoElement;
+
+        if (screenShareUICanvas == null)
+            screenShareUICanvas = FindObjectOfType<TVFullScreenUI>();
+
+        if (video == null) return;
+        
+        try
+        {
+            var tvObjects = FindObjectsOfType<TV>();
+            
+            video.VideoReceived += tex =>
+            {
+
+                foreach (var tv in tvObjects)
+                {
+                    if (tv.transform.GetChild(0).TryGetComponent(out MeshRenderer meshRenderer))
+                    {
+                        meshRenderer.material.mainTexture = tex;
+                    }
+                }
+                Debug.Log("Before set stream content");
+
+                screenShareUICanvas.SetStreamContent(tex);
+            };
+        }
+        catch (Exception e)
+        {
+            Debug.Log("Exception in getting TVs and setting texture -- " + e.Message);
+        }
+    }
+
+    private void EnableScreenShareAudio(Track track, TrackPublication publication)
+    {
+        if (track.Kind == TrackKind.Audio && track.Source == TrackSource.ScreenShareAudio &&
+            publication is RemoteTrackPublication)
+        {
+            var htmlAudioElement = track.Attach() as HTMLAudioElement;
+            if (htmlAudioElement != null) htmlAudioElement.Volume = 0.37f;
+        }
+    }
+
+    #endregion
 }

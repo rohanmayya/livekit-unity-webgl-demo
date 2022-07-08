@@ -115,13 +115,13 @@
       }
     },
     "io.livekit.unity": {
-      "version": "https://github.com/livekit/client-sdk-unity-web.git",
+      "version": "https://github.com/livekit/client-sdk-unity-web.git#theo-logs",
       "depth": 0,
       "source": "git",
       "dependencies": {
         "com.unity.nuget.newtonsoft-json": "2.0.0"
       },
-      "hash": "72f11ba80b4c03596ced166d5150133c15e189bd"
+      "hash": "e93b7af5086cdd9e0575d5720652c2a84883f5bb"
     },
     "com.unity.modules.ai": {
       "version": "1.0.0",
